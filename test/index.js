@@ -6,26 +6,6 @@ test('decoder', t => {
   // https://etherscan.io/tx/0xa6f019f2fc916bd8df607f1c99148ebb06322999ff08bc88927fe8406acae1b2
   const data = fs.readFileSync(`${__dirname}/data/abi1_input_data.txt`)
 
-  t.test('abi filepath', t => {
-    t.plan(6)
-    const decoder = new InputDataDecoder(`${__dirname}/data/abi1.json`)
-
-    const result = decoder.decodeData(data)
-    t.equal(result.method, 'registerOffChainDonation')
-    t.deepEqual(result.types, [
-      'address',
-      'uint256',
-      'uint256',
-      'string',
-      'bytes32'
-    ])
-    t.equal(result.inputs[0].toString(16), '5a9dac9315fdd1c3d13ef8af7fdfeb522db08f02')
-    t.equal(result.inputs[1].toString(16), '58a20230')
-    t.equal(result.inputs[2].toString(16), '402934')
-    t.equal(result.inputs[3], 'BTC')
-    t.end()
-  })
-
   t.test('abi array object', t => {
     t.plan(7)
     const abi = JSON.parse(fs.readFileSync(`${__dirname}/data/abi1.json`))
@@ -34,9 +14,9 @@ test('decoder', t => {
     const result = decoder.decodeData(data)
     t.equal(result.method, 'registerOffChainDonation')
     t.deepEqual(result.types, ['address', 'uint256', 'uint256', 'string', 'bytes32'])
-    t.equal(result.inputs[0].toString(16), '5a9dac9315fdd1c3d13ef8af7fdfeb522db08f02')
-    t.equal(result.inputs[1].toString(16), '58a20230')
-    t.equal(result.inputs[2].toString(16), '402934')
+    t.equal(result.inputs[0].toString(16), '5A9dAC9315FdD1c3D13eF8Af7FDFEB522Db08F02')
+    t.equal(result.inputs[1].toHexString(), '0x58a20230')
+    t.equal(result.inputs[2].toHexString(), '0x402934')
     t.equal(result.inputs[3], 'BTC')
     t.deepEqual(result.names, ['addr', 'timestamp', 'chfCents', 'currency', 'memo'])
     t.end()
@@ -69,9 +49,9 @@ test('decoder', t => {
     const data = fs.readFileSync(`${__dirname}/data/erc721_transferfrom_tx_data.txt`)
     const result = decoder.decodeData(data)
 
-    t.equal(result.inputs[0].toString(16), '10017ca37b1257ac0771e24652aa28c758e378eb')
-    t.equal(result.inputs[1].toString(16), 'e7a632d89104385bdd3992eeb82cffeb48e4e539')
-    t.equal(result.inputs[2].toString(16), '5dc5')
+    t.equal(result.inputs[0].toString(16), '10017ca37B1257Ac0771e24652aa28c758e378Eb')
+    t.equal(result.inputs[1].toString(16), 'e7a632d89104385BDd3992eeb82cfFeB48e4e539')
+    t.equal(result.inputs[2].toHexString(), '0x5dc5')
 
     t.equal(result.names[0], '_from')
     t.equal(result.names[1], '_to')
@@ -211,17 +191,5 @@ test('decoder', t => {
       'bool'
     ]
     t.deepEqual(result.types, expectedTypes)
-  })
-
-  // https://github.com/miguelmota/ethereum-input-data-decoder/issues/8
-  t.test('256 address', t => {
-    t.plan(2)
-    const decoder = new InputDataDecoder(`${__dirname}/data/abi2.json`)
-
-    const data = '0xa9059cbb85f1150654584d0192059454e9dc1532d9d9cf914926406a02370cea80cf32f600000000000000000000000000000000000000000000000000000000033dc10b'
-
-    const result = decoder.decodeData(data)
-    t.equal(result.inputs[0].toString(16), 'e9dc1532d9d9cf914926406a02370cea80cf32f6')
-    t.equal(result.inputs[1].toString(10), '54378763')
   })
 })

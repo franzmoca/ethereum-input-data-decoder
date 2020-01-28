@@ -1,5 +1,3 @@
-const fs = require('fs')
-const ethabi = require('ethereumjs-abi')
 const ethers = require('ethers')
 const Buffer = require('buffer/').Buffer
 const isBuffer = require('is-buffer')
@@ -8,9 +6,7 @@ class InputDataDecoder {
   constructor (prop) {
     this.abi = []
 
-    if (typeof prop === `string`) {
-      this.abi = JSON.parse(fs.readFileSync(prop))
-    } else if (prop instanceof Object) {
+    if (prop instanceof Object) {
       this.abi = prop
     } else {
       throw new TypeError(`Must pass ABI array object or file path to constructor`)
@@ -102,30 +98,25 @@ class InputDataDecoder {
 
       if (hash === methodId) {
         let inputs = []
+        // inputsBuf = normalizeAddresses(types, inputsBuf)
+        inputs = ethers.utils.defaultAbiCoder.decode(types, inputsBuf)
+        // defaultAbiCoder attaches some unwanted properties to the list object
+        inputs = deepRemoveUnwantedArrayProperties(inputs)
 
-        try {
-          inputsBuf = normalizeAddresses(types, inputsBuf)
-          inputs = ethabi.rawDecode(types, inputsBuf)
-        } catch (err) {
-          inputs = ethers.utils.defaultAbiCoder.decode(types, inputsBuf)
-          // defaultAbiCoder attaches some unwanted properties to the list object
-          inputs = deepRemoveUnwantedArrayProperties(inputs)
-
-          // TODO: do this normalization into normalizeAddresses
-          inputs = inputs.map((input, i) => {
-            if (types[i].components) {
-              const tupleTypes = types[i].components
-              return deepStripTupleAddresses(input, tupleTypes)
-            }
-            if (types[i] === 'address') {
-              return input.split('0x')[1]
-            }
-            if (types[i] === 'address[]') {
-              return input.map(address => address.split('0x')[1])
-            }
-            return input
-          })
-        }
+        // TODO: do this normalization into normalizeAddresses
+        inputs = inputs.map((input, i) => {
+          if (types[i].components) {
+            const tupleTypes = types[i].components
+            return deepStripTupleAddresses(input, tupleTypes)
+          }
+          if (types[i] === 'address') {
+            return input.split('0x')[1]
+          }
+          if (types[i] === 'address[]') {
+            return input.map(address => address.split('0x')[1])
+          }
+          return input
+        })
 
         // Map any tuple types into arrays
         const typesToReturn = types.map(t => {
@@ -181,41 +172,6 @@ function deepRemoveUnwantedArrayProperties (arr) {
     if (Array.isArray(item)) return deepRemoveUnwantedArrayProperties(item)
     return item
   })]
-}
-
-function normalizeAddresses (types, input) {
-  let offset = 0
-  for (let i = 0; i < types.length; i++) {
-    const type = types[i]
-    if (type === 'address') {
-      input.set(Buffer.alloc(12), offset)
-    }
-
-    if (isArray(type)) {
-      const size = parseTypeArray(type)
-      if (size && size !== 'dynamic') {
-        offset += 32 * size
-      } else {
-        offset += 32
-      }
-    } else {
-      offset += 32
-    }
-  }
-
-  return input
-}
-
-function parseTypeArray (type) {
-  const tmp = type.match(/(.*)\[(.*?)\]$/)
-  if (tmp) {
-    return tmp[2] === '' ? 'dynamic' : parseInt(tmp[2], 10)
-  }
-  return null
-}
-
-function isArray (type) {
-  return type.lastIndexOf(']') === type.length - 1
 }
 
 function handleInputs (input, tupleArray) {
